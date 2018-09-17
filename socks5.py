@@ -5,7 +5,7 @@ import struct
 import socket
 import logging
 
-# setup logger 
+# Setup logger 
 logger = logging.getLogger('Socks5')
 logger.setLevel(logging.DEBUG)
 logging.basicConfig(level=logging.DEBUG, format='%(threadName)s %(asctime)s- %(levelname)s - %(message)s')
@@ -36,12 +36,11 @@ async def socks5_handler(reader, writer):
     def write_pack(*argv):
         writer.write(struct.pack(*argv))
 
-    #  authentication negotiations
+    # Authentication negotiations
     ver, nmeth = await read_unpack('!BB',2)
     assert SOCKS5_VER == ver
 
-    # request details
-    # Implement NO AUTHENTICATION REQUIRED only
+    # Request details
     meth = await reader.read(nmeth)
     write_pack('!BB', SOCKS5_VER, SOCKS5_NOAUTH)
 
@@ -66,6 +65,7 @@ async def socks5_handler(reader, writer):
     else:
         raise AssertionError('Error: Invalid atyp')
     
+    # Read port and address
     port = (await read_unpack('!H', 2))[0]
     addr = struct.unpack('!I',socket.inet_aton(host))[0]
 
@@ -76,6 +76,7 @@ async def socks5_handler(reader, writer):
     # Replies - completed the authentication negotiations
     write_pack('!BBBBIH', SOCKS5_VER, SOCKS5_SUCCEEDED, 0x00, SOCKS5_IPV4, addr, port)
 
+    # Pipe between client and server
     data = await reader.read(BUF_SIZE)
     while data:
         remote.transport.write(data)
@@ -85,14 +86,13 @@ if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     coro = asyncio.start_server(socks5_handler, '127.0.0.1', 8888, loop=loop)
     server = loop.run_until_complete(coro)
-    # Serve requests until Ctrl+C is pressed
     logging.debug('Serving on {}'.format(server.sockets[0].getsockname()))
+    
     try:
         loop.run_forever()
     except KeyboardInterrupt:
         pass
 
-    # Close the server
     server.close()
     loop.run_until_complete(server.wait_closed())
     loop.close()
