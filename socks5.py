@@ -3,6 +3,12 @@
 import asyncio
 import struct
 import socket
+import logging
+
+# setup logger 
+logger = logging.getLogger('Socks5')
+logger.setLevel(logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG, format='%(threadName)s %(asctime)s- %(levelname)s - %(message)s')
 
 class RemoteHost(asyncio.Protocol):
     def connection_made(self, transport):
@@ -80,7 +86,7 @@ if __name__ == '__main__':
     coro = asyncio.start_server(socks5_handler, '127.0.0.1', 8888, loop=loop)
     server = loop.run_until_complete(coro)
     # Serve requests until Ctrl+C is pressed
-    print('Serving on {}'.format(server.sockets[0].getsockname()))
+    logging.debug('Serving on {}'.format(server.sockets[0].getsockname()))
     try:
         loop.run_forever()
     except KeyboardInterrupt:
